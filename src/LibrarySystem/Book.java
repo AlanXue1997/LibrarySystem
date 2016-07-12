@@ -1,19 +1,19 @@
 package LibrarySystem;
 
-class Book {
+public class Book {
 	
-	private String isbn;
-	private String name;
-	private String author;
-	private String press;
-	private int publicationDate;
-	private double integrity;
-	private boolean lent;
-	private String lentPerson;
-	private int lentDate;
-	private boolean ordered;
-	private String orderedPerson;
-	private int orderedDate;
+	private String isbn = "";
+	private String name = "";
+	private String author = "";
+	private String press = "";
+	private int publicationDate = -1;
+	private double integrity = -1;
+	private boolean lent = false;
+	private String lentPerson = "";
+	private int lentDate = -1;
+	private boolean ordered = false;
+	private String orderedPerson = "";
+	private int orderedDate = -1;
 
 	public void setIsbn(String isbn) { this.isbn = isbn; }
 	public void setName(String name) { this.name = name; }

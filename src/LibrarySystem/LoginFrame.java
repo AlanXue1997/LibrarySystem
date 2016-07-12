@@ -16,7 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
-class LoginFrame extends JFrame {
+public class LoginFrame extends JFrame {
 	private LibraryDatabase libraryDatabase;
 	private JLabel name = new JLabel("I   D:");
 	private JLabel pass = new JLabel("Ум Ты:");

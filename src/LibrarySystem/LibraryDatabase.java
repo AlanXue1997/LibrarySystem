@@ -4,13 +4,17 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.LinkedList;
+
 import java.sql.ResultSet;
 
-class LibraryDatabase {
+public class LibraryDatabase {
 	
 	private Connection conn;
 	private Statement stmt;
-	
+
+	/**
+	 * 构造一个初始化的LibraryDatabase类，自动与数据库连接（数据库名：library；用户：root；密码：空）
+	 */
 	public LibraryDatabase(){
 		try{
 			Class.forName("com.mysql.jdbc.Driver").newInstance();
@@ -23,6 +27,11 @@ class LibraryDatabase {
 		}
 	}
 	
+	/**
+	 * 从数据库中获取isbn码对应的图书，并写入一个Book类，返回此Book类
+	 * @param isbn 想要获取的图书对应的isbn码
+	 * @return isbn码所对应的书
+	 */
 	public Book getBook(String isbn){
        String sql =  "select * from book where isbn=" + isbn;
        try{
@@ -30,29 +39,21 @@ class LibraryDatabase {
 		   if(rs.next()){
 		       Book book = new Book();
 		       book.setIsbn(isbn);
-		       if(null == rs.getString(2))
-		    	   book.setName("");
-		       else
+		       if(null != rs.getString(2))
 		           book.setName(new String(rs.getString(2).trim()));
-		       if(null == rs.getString(3))
-		    	   book.setAuthor("");
-		       else
+		       if(null != rs.getString(3))
 		           book.setAuthor(new String(rs.getString(3).trim()));
-		       if(null == rs.getString(4))
-		    	   book.setPress("");
-		       else
+		       if(null != rs.getString(4))
 		    	   book.setPress(new String(rs.getString(4).trim()));
-		       if(null == rs.getString(5))
-		    	   book.setPublicationDate(-1);
-		       else
+		       if(null != rs.getString(5))
 		    	   book.setPublicationDate(Integer.parseInt(rs.getString(5).trim()));
-			       book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
-			       book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
+			   book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
+			   book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
 		       if(book.getLent()){
 				   book.setLentPerson(new String(rs.getString(8).trim()));
 				   book.setLentDate(Integer.parseInt(rs.getString(9).trim()));
 		       }
-			       book.setOrdered(1 == Integer.parseInt(rs.getString(10).trim()));
+			   book.setOrdered(1 == Integer.parseInt(rs.getString(10).trim()));
 			   if(book.getOrdered()){
 				   book.setOrderedPerson(new String(rs.getString(11).trim()));
 				   book.setOrderedDate(Integer.parseInt(rs.getString(12).trim()));
@@ -73,7 +74,7 @@ class LibraryDatabase {
        String sql = "select * from book where ";
        String[] array = st.split(" ");
        for(String s: array)
-	    sql += "(isbn like '%" + s + "%' or name like '%" + s + "%' or author like '%" + s + "%' or press like '%" + s + "%') and ";
+    	   sql += "(isbn like '%" + s + "%' or name like '%" + s + "%' or author like '%" + s + "%' or press like '%" + s + "%') and ";
        sql += "true";
        LinkedList<Book> list = new LinkedList<Book>();
        try{
@@ -81,24 +82,16 @@ class LibraryDatabase {
 	   while(rs.next()){
 	       Book book = new Book();
 	       book.setIsbn(rs.getString(1));
-	       if(null == rs.getString(2))
-	    	   book.setName("");
-	       else
+	       if(null != rs.getString(2))
 	           book.setName(new String(rs.getString(2).trim()));
-	       if(null == rs.getString(3))
-	    	   book.setAuthor("");
-	       else
+	       if(null != rs.getString(3))
 	           book.setAuthor(new String(rs.getString(3).trim()));
-	       if(null == rs.getString(4))
-	    	   book.setPress("");
-	       else
+	       if(null != rs.getString(4))
 	    	   book.setPress(new String(rs.getString(4).trim()));
-	       if(null == rs.getString(5))
-	    	   book.setPublicationDate(-1);
-	       else
+	       if(null != rs.getString(5))
 	    	   book.setPublicationDate(Integer.parseInt(rs.getString(5).trim()));
-		       book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
-		       book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
+		   book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
+		   book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
 	       if(book.getLent()){
 			   book.setLentPerson(new String(rs.getString(8).trim()));
 			   book.setLentDate(Integer.parseInt(rs.getString(9).trim()));
@@ -119,6 +112,30 @@ class LibraryDatabase {
        return null;
    }
 
+	public boolean saveBook(Book book){
+		if(book.getIntegrity() == -1 || book.getIsbn() == "") return false;//incorrect isbn
+		String sql = "select * from book where isbn='" + book.getIsbn() + "'";
+		try{
+			ResultSet rs = stmt.executeQuery(sql);//find if the book exits in the database
+			if(rs.next()) return false;//the book exists in the database
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+		sql = "insert into book (isbn, name, author, press, publication_date, integrity, lent, ordered)"
+				+ "values ('" + book.getIsbn() + "','" + book.getName() + "','" + book.getAuthor() + "','"
+				+ book.getPress() + "'," + book.getPublicationDate() + "," + book.getIntegrity() + ",0,0)";
+		try{
+			stmt.executeUpdate(sql);//insert the book into database
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+		return true;
+	}
+	
 	public String getPasswd(String id) {
 		String sql = "select passwd from person where id=" + id;
 		try{
@@ -172,6 +189,29 @@ class LibraryDatabase {
 		    System.exit(0);
 		}
 		return null;
+	}
+	
+	public boolean savePerson(Person person, String passwd){
+		if(person.getId() == "" || person.getName() == "") return false;//incorrect id or name
+		String sql = "select * from person where id='" + person.getId() + "'";
+		try{
+			ResultSet rs = stmt.executeQuery(sql);//find if the person exits in the database
+			if(rs.next()) return false;//the person exists in the database
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+		sql = "insert into person (id, passwd, id_type, name) values ('" + person.getId() + "','"
+				+ passwd + "'," + person.getIdType() + ",'" + person.getName() + "')";
+		try{
+			stmt.executeUpdate(sql);
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+		return true;
 	}
 	
 	public LinkedList<Event> getEventByBook(String isbn){
@@ -249,5 +289,6 @@ class LibraryDatabase {
 		}
 		return null;
 	}
+
 	
 }

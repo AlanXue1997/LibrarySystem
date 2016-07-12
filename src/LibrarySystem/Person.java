@@ -1,19 +1,19 @@
 package LibrarySystem;
 
-class Person {
+public class Person {
 	
 	public static int STUDENT = 0;
 	public static int MANAGER = 1;
 	
-	private String id;
-	private int idType;
-	private String name;
-	private String lentA;
-	private String lentB;
-	private String lentC;
-	private int lentADate;
-	private int lentBDate;
-	private int lentCDate;
+	private String id = "";
+	private int idType = 0;
+	private String name = "";
+	private String lentA = "";
+	private String lentB = "";
+	private String lentC = "";
+	private int lentADate = -1;
+	private int lentBDate = -1;
+	private int lentCDate = -1;
 
 	public void setId(String id) { this.id = id; }
 	public void setIdType(int idType) { this.idType = idType; }

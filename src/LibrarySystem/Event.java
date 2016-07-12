@@ -1,6 +1,6 @@
 package LibrarySystem;
 
-class Event {
+public class Event {
 	
 	public static int BORROW = 0;
 	public static int RETURN = 1;
