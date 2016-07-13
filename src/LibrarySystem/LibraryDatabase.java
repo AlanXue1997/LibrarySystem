@@ -7,6 +7,11 @@ import java.util.LinkedList;
 
 import java.sql.ResultSet;
 
+/**
+ * 所有有关数据库的操作在此进行，使用前需要实例化
+ * @author Alan
+ *
+ */
 public class LibraryDatabase {
 	
 	private Connection conn;
@@ -30,7 +35,7 @@ public class LibraryDatabase {
 	/**
 	 * 从数据库中获取isbn码对应的图书，并写入一个Book类，返回此Book类
 	 * @param isbn 想要获取的图书对应的isbn码
-	 * @return isbn码所对应的书
+	 * @return isbn码所对应的书，如果不存在，则返回null
 	 */
 	public Book getBook(String isbn){
        String sql =  "select * from book where isbn=" + isbn;
@@ -70,6 +75,11 @@ public class LibraryDatabase {
        return null;
     }
 	
+	/**
+	 * 模糊搜索图书
+	 * @param st 想要搜索的内容，可以是isbn、书名、作者或出版社，若搜索条件不唯一，用空格隔开
+	 * @return 所有符合条件的书
+	 */
 	public LinkedList<Book> searchBook(String st){
        String sql = "select * from book where ";
        String[] array = st.split(" ");
@@ -78,32 +88,32 @@ public class LibraryDatabase {
        sql += "true";
        LinkedList<Book> list = new LinkedList<Book>();
        try{
-	   ResultSet rs = stmt.executeQuery(sql);
-	   while(rs.next()){
-	       Book book = new Book();
-	       book.setIsbn(rs.getString(1));
-	       if(null != rs.getString(2))
-	           book.setName(new String(rs.getString(2).trim()));
-	       if(null != rs.getString(3))
-	           book.setAuthor(new String(rs.getString(3).trim()));
-	       if(null != rs.getString(4))
-	    	   book.setPress(new String(rs.getString(4).trim()));
-	       if(null != rs.getString(5))
-	    	   book.setPublicationDate(Integer.parseInt(rs.getString(5).trim()));
-		   book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
-		   book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
-	       if(book.getLent()){
-			   book.setLentPerson(new String(rs.getString(8).trim()));
-			   book.setLentDate(Integer.parseInt(rs.getString(9).trim()));
-	       }
-		       book.setOrdered(1 == Integer.parseInt(rs.getString(10).trim()));
-		   if(book.getOrdered()){
-			   book.setOrderedPerson(new String(rs.getString(11).trim()));
-			   book.setOrderedDate(Integer.parseInt(rs.getString(12).trim()));
-	       }
-	       list.add(book);
-	   }
-	   return list;
+		   ResultSet rs = stmt.executeQuery(sql);
+		   while(rs.next()){
+		       Book book = new Book();
+		       book.setIsbn(rs.getString(1));
+		       if(null != rs.getString(2))
+		           book.setName(new String(rs.getString(2).trim()));
+		       if(null != rs.getString(3))
+		           book.setAuthor(new String(rs.getString(3).trim()));
+		       if(null != rs.getString(4))
+		    	   book.setPress(new String(rs.getString(4).trim()));
+		       if(null != rs.getString(5))
+		    	   book.setPublicationDate(Integer.parseInt(rs.getString(5).trim()));
+			   book.setIntegrity(Double.parseDouble(rs.getString(6).trim()));
+			   book.setLent(1 == Integer.parseInt(rs.getString(7).trim()));
+		       if(book.getLent()){
+				   book.setLentPerson(new String(rs.getString(8).trim()));
+				   book.setLentDate(Integer.parseInt(rs.getString(9).trim()));
+		       }
+			       book.setOrdered(1 == Integer.parseInt(rs.getString(10).trim()));
+			   if(book.getOrdered()){
+				   book.setOrderedPerson(new String(rs.getString(11).trim()));
+				   book.setOrderedDate(Integer.parseInt(rs.getString(12).trim()));
+		       }
+		       list.add(book);
+		   }
+		   return list;
        }
        catch(Exception ex){
 	   System.out.println(ex);
@@ -112,6 +122,11 @@ public class LibraryDatabase {
        return null;
    }
 
+	/**
+	 * 将一个书的信息存入数据库（只用于新建图书之时即可）
+	 * @param book	想要存入的图书（内部至少需要填写isbn、integrity两个字段
+	 * @return	返回是否成功存入图书，不成功的原因有：integrity没有填写、isbn没有填写、isbn在数据库中已经存在
+	 */
 	public boolean saveBook(Book book){
 		if(book.getIntegrity() == -1 || book.getIsbn() == "") return false;//incorrect isbn
 		String sql = "select * from book where isbn='" + book.getIsbn() + "'";
@@ -136,6 +151,11 @@ public class LibraryDatabase {
 		return true;
 	}
 	
+	/**
+	 * 获取一个用户id对应的密码
+	 * @param id 用户的id
+	 * @return 若id存在，则返回对应的密码；若id不存在，返回空字符串""
+	 */
 	public String getPasswd(String id) {
 		String sql = "select passwd from person where id=" + id;
 		try{
@@ -152,6 +172,11 @@ public class LibraryDatabase {
 		return "";
 	}
 
+	/**
+	 * 从数据库中获取id对应的用户，并写入一个Person类，返回此Person类
+	 * @param id 想要获取的用户对应的id
+	 * @return id所对应的用户，如果不存在，则返回null
+	 */
 	public Person getPerson(String id){
 		String sql = "select * from person where id=" + id;
 		try{
@@ -191,6 +216,12 @@ public class LibraryDatabase {
 		return null;
 	}
 	
+	/**
+	 * 将一个人的信息存入数据库（只用于新建用户即可）
+	 * @param person 想要存入的人（内部至少需要填写id、name、idType三个字段，其中idType默认值为Person.STUDENT）
+	 * @param passwd 想要存入的人对应的密码（此方法内部不对密码的合法性进行检验）
+	 * @return 返回是否成功存入此人，不成功的原因有：id没有填写、name没有填写、id在数据库中已经存在
+	 */
 	public boolean savePerson(Person person, String passwd){
 		if(person.getId() == "" || person.getName() == "") return false;//incorrect id or name
 		String sql = "select * from person where id='" + person.getId() + "'";
@@ -214,6 +245,11 @@ public class LibraryDatabase {
 		return true;
 	}
 	
+	/**
+	 * 从数据库中获取isbn对应的图书的所以历史事件
+	 * @param isbn 想要查询的图书的isbn码
+	 * @return isbn码对应图书的所有历史事件
+	 */
 	public LinkedList<Event> getEventByBook(String isbn){
 		String sql = "select * from event where isbn=" + isbn;
 		LinkedList<Event> list = new LinkedList<Event>();
@@ -252,6 +288,11 @@ public class LibraryDatabase {
 		return null;
 	}
 	
+	/**
+	 * 从数据库中获取id对应的人的所有历史事件
+	 * @param id 想要查询的人的id
+	 * @return id对应的人的所有历史事件
+	 */
 	public LinkedList<Event> getEventByPerson(String id){
 		String sql = "select * from event where user_id=" + id + " or manager_id=" + id;
 		LinkedList<Event> list = new LinkedList<Event>();
