@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.LinkedList;
 
+import com.sun.org.apache.xerces.internal.impl.xs.identity.ValueStore;
+
 import java.sql.ResultSet;
 
 /**
@@ -233,7 +235,7 @@ public class LibraryDatabase {
 			System.out.println(ex);
 			System.exit(0);
 		}
-		sql = "insert into person (id, passwd, id_type, name) values ('" + person.getId() + "','"
+		sql = "insert into person (id, passwd, id_type, name) values (" + person.getId() + ",'"
 				+ passwd + "'," + person.getIdType() + ",'" + person.getName() + "')";
 		try{
 			stmt.executeUpdate(sql);
@@ -251,7 +253,7 @@ public class LibraryDatabase {
 	 * @return isbn码对应图书的所有历史事件
 	 */
 	public LinkedList<Event> getEventByBook(String isbn){
-		String sql = "select * from event where isbn=" + isbn;
+		String sql = "select * from event where isbn='" + isbn + "'";
 		LinkedList<Event> list = new LinkedList<Event>();
 		try{
 		    ResultSet rs = stmt.executeQuery(sql);
@@ -262,12 +264,12 @@ public class LibraryDatabase {
 				event.setType(Integer.parseInt(rs.getString(3).trim()));
 				event.setIsbn(new String(rs.getString(4).trim()));
 				event.setUserId(new String(rs.getString(5).trim()));
-				if(event.getId() == Event.BORROW){
+				if(event.getType() == Event.BORROW){
 				    event.setManagerId(new String(rs.getString(6).trim()));
 				    event.setBeforeIntegrity(-1);
 				    event.setAfterIntegrity(-1);
 				}
-				else if(event.getId() == Event.RETURN){
+				else if(event.getType() == Event.RETURN){
 				    event.setManagerId(new String(rs.getString(6).trim()));
 				    event.setBeforeIntegrity(-1);
 				    event.setAfterIntegrity(-1);
@@ -289,12 +291,12 @@ public class LibraryDatabase {
 	}
 	
 	/**
-	 * 从数据库中获取id对应的人的所有历史事件
+	 * 从数据库中获取id对应的人的所有历史事
 	 * @param id 想要查询的人的id
 	 * @return id对应的人的所有历史事件
 	 */
 	public LinkedList<Event> getEventByPerson(String id){
-		String sql = "select * from event where user_id=" + id + " or manager_id=" + id;
+		String sql = "select * from event where user_id='" + id + "' or manager_id='" + id + "'";
 		LinkedList<Event> list = new LinkedList<Event>();
 		try{
 		    ResultSet rs = stmt.executeQuery(sql);
@@ -305,12 +307,12 @@ public class LibraryDatabase {
 				event.setType(Integer.parseInt(rs.getString(3).trim()));
 				event.setIsbn(new String(rs.getString(4).trim()));
 				event.setUserId(new String(rs.getString(5).trim()));
-				if(event.getId() == Event.BORROW){
+				if(event.getType() == Event.BORROW){
 				    event.setManagerId(new String(rs.getString(6).trim()));
 				    event.setBeforeIntegrity(-1);
 				    event.setAfterIntegrity(-1);
 				}
-				else if(event.getId() == Event.RETURN){
+				else if(event.getType() == Event.RETURN){
 				    event.setManagerId(new String(rs.getString(6).trim()));
 				    event.setBeforeIntegrity(-1);
 				    event.setAfterIntegrity(-1);
@@ -330,6 +332,172 @@ public class LibraryDatabase {
 		}
 		return null;
 	}
-
+	
+	public boolean borrowBook(String userId, String isbn, String managerId, int date){
+		Book book = getBook(isbn);
+		Person person = getPerson(userId);
+		if(book.getLent()) return false;//this book has been lent
+		if(!person.getLentC().equals("0")) return false;//this person has lent three books
+		if(book.getOrdered()){
+			if(book.getOrderedPerson() != userId) return false;//this book has been ordered by others
+			book.setOrdered(false);
+		}
+		if(person.getLentA().equals("0")){
+			person.setLentA(book.getIsbn());
+			person.setLentADate(date);
+		}
+		else if(person.getLentB().equals("0")){
+			person.setLentB(book.getIsbn());
+			person.setLentBDate(date);
+		}
+		else{
+			person.setLentC(book.getIsbn());
+			person.setLentCDate(date);
+		}
+		book.setLent(true);
+		book.setLentDate(date);
+		book.setLentPerson(userId);
+		Event event = new Event();
+		event.setDate(date);
+		event.setUserId(userId);
+		event.setIsbn(isbn);
+		event.setManagerId(managerId);
+		event.setType(Event.BORROW);
+		updatePerson(person);
+		updateBook(book);
+		saveEvent(event);
+		return true;
+	}
+	
+	public boolean returnBook(String userId, String isbn, String managerId, int date, double integrity){
+		Book book = getBook(isbn);
+		Person person = getPerson(userId);
+		if(!book.getLent() || !book.getLentPerson().equals(userId)) return false;
+		if(person.getLentA().equals(isbn)){
+			if(!person.getLentB().equals("0")){
+				person.setLentA(person.getLentB());
+				person.setLentADate(person.getLentBDate());
+				if(!person.getLentC().equals("0")){
+					person.setLentB(person.getLentC());
+					person.setLentBDate(person.getLentCDate());
+					person.setLentC("0");
+				}
+				else{
+					person.setLentB("0");
+				}
+			}
+			else{
+				person.setLentA("0");
+			}
+		}
+		else if(person.getLentB().equals(isbn)){
+			if(!person.getLentC().equals("0")){
+				person.setLentB(person.getLentC());
+				person.setLentBDate(person.getLentCDate());
+				person.setLentC("0");
+			}
+			else{
+				person.setLentB("0");
+			}
+		}
+		else if(person.getLentC().equals(isbn)){
+			person.setLentC("0");
+		}
+		else
+			return false;
+		Event event = new Event();
+		event.setDate(date);
+		event.setIsbn(isbn);
+		event.setUserId(userId);
+		event.setManagerId(managerId);
+		event.setType(Event.RETURN);
+		event.setBeforeIntegrity(book.getIntegrity());
+		event.setAfterIntegrity(integrity);
+		book.setLent(false);
+		book.setIntegrity(integrity);
+		updatePerson(person);
+		updateBook(book);
+		saveEvent(event);
+		return true;
+	}
+	
+	private void updatePerson(Person person){
+		String sql = "update person set lent_a=" + person.getLentA() + ",lent_a_date=" + person.getLentADate() 
+				+ ",lent_b=" + person.getLentB() + ",lent_b_date=" + person.getLentBDate()
+				+ ",lent_c=" + person.getLentC() + ",lent_c_date=" + person.getLentCDate()
+				+ " where id=" + person.getId();
+		try{
+			stmt.executeUpdate(sql);
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}		
+	}
+	
+	private void updateBook(Book book){
+		String sql = "update book set integrity=" + book.getIntegrity() + ",lent="
+				+ (book.getLent()?("1,lent_person=" + book.getLentPerson() + ",lent_date=" + book.getLentDate()):"0")
+				+ ",ordered="
+				+ (book.getOrdered()?("1,ordered_person" + book.getOrderedPerson() + ",ordered_date=" + book.getOrderedDate()):"0")
+				+ " where isbn=" + book.getIsbn();
+		try{
+			stmt.executeUpdate(sql);
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+	}
+	
+	private void saveEvent(Event event){
+		if(event.getType() == Event.BORROW){
+			String sql = "insert into event (date,type,isbn,user_id,manager_id) values (" + event.getDate()
+					+ "," + event.getType() + "," + event.getIsbn() + "," + event.getUserId() + ","
+					+ event.getManagerId() + ")";
+			try{
+				stmt.executeUpdate(sql);
+			}
+			catch(Exception ex){
+				System.out.println(ex);
+				System.exit(0);
+			}
+		}
+		else if(event.getType() == Event.RETURN){
+			String sql = "insert into event (date,type,isbn,user_id,manager_id,before_integrity,after_integrity)"
+					+ " values (" + event.getDate() + "," + event.getType() + "," + event.getIsbn() + ","
+					+ event.getUserId() + "," + event.getManagerId() + "," + event.getBeforeIntegrity() + ","
+					+ event.getAfterIntegrity() + ")";
+			try{
+				stmt.executeUpdate(sql);
+			}
+			catch(Exception ex){
+				System.out.println(ex);
+				System.exit(0);
+			}
+		}
+		else if(event.getType() == Event.RENEW){
+			String sql = "insert into event (date,type,isbn,user_id) values (" + event.getDate() + ","
+					+ event.getType() + "," + event.getIsbn() + "," + event.getUserId() + ")";
+			try{
+				stmt.executeUpdate(sql);
+			}
+			catch(Exception ex){
+				System.out.println(ex);
+				System.exit(0);
+			}
+		}
+		else{
+			String sql = "insert into event (date,type,isbn,user_id) values (" + event.getDate() + ","
+					+ event.getType() + "," + event.getIsbn() + "," + event.getUserId() + ")";
+			try{
+				stmt.executeUpdate(sql);
+			}
+			catch(Exception ex){
+				System.out.println(ex);
+				System.exit(0);
+			}
+		}
+	}
 	
 }

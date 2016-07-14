@@ -15,10 +15,10 @@ public class Book {
 	private int publicationDate = -1;
 	private double integrity = -1;
 	private boolean lent = false;
-	private String lentPerson = "";
+	private String lentPerson = "0";
 	private int lentDate = -1;
 	private boolean ordered = false;
-	private String orderedPerson = "";
+	private String orderedPerson = "0";
 	private int orderedDate = -1;
 
 	/**
@@ -43,7 +43,7 @@ public class Book {
 	public void setPress(String press) { this.press = press; }
 	/**
 	 * 设置出版时间（默认为-1）
-	 * @param publicationDate 一个8位整数，格式为yyyymmdd（比如2016年7月6日应写为20160706），方法内部不会对数值的合法性进行判断
+	 * @param publicationDate 一个6位整数，格式为yyyymm（比如2016年7月应写为201607），方法内部不会对数值的合法性进行判断
 	 */
 	public void setPublicationDate(int publicationDate) { this.publicationDate = publicationDate; }
 	/**
@@ -63,7 +63,7 @@ public class Book {
 	public void setLentPerson(String id) { lentPerson = id; }
 	/**
 	 * 设置借出时间（默认为-1）
-	 * @param lentDate 一个8位整数，格式为yyyymmdd（比如2016年7月6日应写为20160706），方法内部不会对数值的合法性进行判断
+	 * @param lentDate 一个8位整数，格式为yyyymm（比如2016年7月6日应写为20160706），方法内部不会对数值的合法性进行判断
 	 */
 	public void setLentDate(int lentDate) { this.lentDate = lentDate; }
 	/**
@@ -104,7 +104,7 @@ public class Book {
     public String getPress() { return press; }
     /**
      * 获取出版时间
-     * @return 出版时间，一个8位整数，格式为yyyymmdd（比如2016年7月6日应写为20160706）；若没有出版时间，则返回-1
+     * @return 出版时间，一个6位整数，格式为yyyymm（比如2016年7月应写为201607）；若没有出版时间，则返回-1
      */
     public int getPublicationDate() { return publicationDate; }
     /**

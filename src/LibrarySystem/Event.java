@@ -20,6 +20,10 @@ public class Event {
 	 * 事件的类型之一，表示续借，值为2
 	 */
 	public static int RENEW = 2;
+	/**
+	 * 事件的类型之一，表示续借，值为3
+	 */
+	public static int ORDER = 3;
 	
 	private int id;
 	private int date;
