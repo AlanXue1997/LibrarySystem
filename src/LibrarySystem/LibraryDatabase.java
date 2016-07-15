@@ -178,6 +178,19 @@ public class LibraryDatabase {
 		}
 		return "";
 	}
+	
+	public boolean setPasswd(String id, String passwd){
+		if(passwd.equals("")) return false;
+		String sql = "update person set passwd='" + passwd + "' where id=" + id;
+		try{
+			stmt.executeUpdate(sql);
+		}
+		catch(Exception ex){
+			System.out.println(ex);
+			System.exit(0);
+		}
+		return true;
+	}
 
 	/**
 	 * 从数据库中获取id对应的用户，并写入一个Person类，返回此Person类
@@ -277,13 +290,13 @@ public class LibraryDatabase {
 				}
 				else if(event.getType() == Event.RETURN){
 				    event.setManagerId(new String(rs.getString(6).trim()));
-				    event.setBeforeIntegrity(-1);
-				    event.setAfterIntegrity(-1);
+				    event.setBeforeIntegrity(Double.parseDouble(rs.getString(7).trim()));
+				    event.setAfterIntegrity(Double.parseDouble(rs.getString(8).trim()));
 				}
 				else{
 					event.setManagerId("");
-				    event.setBeforeIntegrity(Double.parseDouble(rs.getString(7).trim()));
-				    event.setAfterIntegrity(Double.parseDouble(rs.getString(8).trim()));
+				    event.setBeforeIntegrity(-1);
+				    event.setAfterIntegrity(-1);
 				}
 				list.add(event);
 		    }
@@ -320,13 +333,13 @@ public class LibraryDatabase {
 				}
 				else if(event.getType() == Event.RETURN){
 				    event.setManagerId(new String(rs.getString(6).trim()));
-				    event.setBeforeIntegrity(-1);
-				    event.setAfterIntegrity(-1);
+				    event.setBeforeIntegrity(Double.parseDouble(rs.getString(7).trim()));
+				    event.setAfterIntegrity(Double.parseDouble(rs.getString(8).trim()));
 				}
 				else{
 					event.setManagerId("");
-				    event.setBeforeIntegrity(Double.parseDouble(rs.getString(7).trim()));
-				    event.setAfterIntegrity(Double.parseDouble(rs.getString(8).trim()));
+				    event.setBeforeIntegrity(-1);
+				    event.setAfterIntegrity(-1);
 				}
 				list.add(event);
 		    }
