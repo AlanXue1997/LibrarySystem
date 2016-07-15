@@ -3,9 +3,13 @@ package LibrarySystem;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 
+import com.sun.org.apache.bcel.internal.generic.ReturnaddressType;
 import com.sun.org.apache.xerces.internal.impl.xs.identity.ValueStore;
+import com.sun.xml.internal.bind.v2.runtime.reflect.Accessor.GetterOnlyReflection;
 
 import java.sql.ResultSet;
 
@@ -40,6 +44,7 @@ public class LibraryDatabase {
 	 * @return isbn码所对应的书，如果不存在，则返回null
 	 */
 	public Book getBook(String isbn){
+		if(isbn.equals("")) return null;
        String sql =  "select * from book where isbn=" + isbn;
        try{
 		   ResultSet rs = stmt.executeQuery(sql);
@@ -180,6 +185,7 @@ public class LibraryDatabase {
 	 * @return id所对应的用户，如果不存在，则返回null
 	 */
 	public Person getPerson(String id){
+		if(id.equals("")) return null;
 		String sql = "select * from person where id=" + id;
 		try{
 		    ResultSet rs = stmt.executeQuery(sql);
@@ -189,22 +195,22 @@ public class LibraryDatabase {
 			person.setIdType(Integer.parseInt(rs.getString(3).trim()));
 			person.setName(new String(rs.getString(4).trim()));
 			if(null == rs.getString(5))
-			    person.setLentA("");
+			    person.setLentA("0");
 			else{
 			    person.setLentA(new String(rs.getString(5).trim()));
 			    person.setLentADate(Integer.parseInt(rs.getString(6).trim()));
 			}
 			if(null == rs.getString(7))
-			    person.setLentB("");
+			    person.setLentB("0");
 			else{
 			    person.setLentB(new String(rs.getString(7).trim()));
-			    person.setLentADate(Integer.parseInt(rs.getString(8).trim()));
+			    person.setLentBDate(Integer.parseInt(rs.getString(8).trim()));
 			}
 			if(null == rs.getString(9))
-			    person.setLentC("");
+			    person.setLentC("0");
 			else{
 			    person.setLentC(new String(rs.getString(9).trim()));
-			    person.setLentADate(Integer.parseInt(rs.getString(10).trim()));
+			    person.setLentCDate(Integer.parseInt(rs.getString(10).trim()));
 			}
 				return person;
 		    }
@@ -336,10 +342,11 @@ public class LibraryDatabase {
 	public boolean borrowBook(String userId, String isbn, String managerId, int date){
 		Book book = getBook(isbn);
 		Person person = getPerson(userId);
+		if(null == book || null == person) return false;
 		if(book.getLent()) return false;//this book has been lent
 		if(!person.getLentC().equals("0")) return false;//this person has lent three books
 		if(book.getOrdered()){
-			if(book.getOrderedPerson() != userId) return false;//this book has been ordered by others
+			if(!book.getOrderedPerson().equals(userId)) return false;//this book has been ordered by others
 			book.setOrdered(false);
 		}
 		if(person.getLentA().equals("0")){
@@ -357,6 +364,7 @@ public class LibraryDatabase {
 		book.setLent(true);
 		book.setLentDate(date);
 		book.setLentPerson(userId);
+		book.setOrdered(false);
 		Event event = new Event();
 		event.setDate(date);
 		event.setUserId(userId);
@@ -421,6 +429,41 @@ public class LibraryDatabase {
 		return true;
 	}
 	
+	public boolean orderBook(String userId, String isbn, int date){
+		Book book = getBook(isbn);
+		Person person = getPerson(userId);
+		if(null == book || null == person) return false;
+		if(book.getLent() || book.getOrdered()) return false;
+		if(!person.getLentC().equals("0")) return false;
+		book.setOrdered(true);
+		book.setOrderedDate(date);
+		book.setOrderedPerson(person.getId());
+		Event event = new Event();
+		event.setDate(date);
+		event.setIsbn(isbn);
+		event.setType(Event.ORDER);
+		event.setUserId(userId);
+		updateBook(book);
+		saveEvent(event);
+		return true;
+	}
+	
+	public boolean renewBook(String userId, String isbn, int date){
+		Book book = getBook(isbn);
+		Person person = getPerson(userId);
+		if(null == book || null == person) return false;
+		if(!(book.getLent() && book.getLentPerson().equals(userId))) return false;
+		book.setLentDate(date);
+		Event event = new Event();
+		event.setDate(date);
+		event.setIsbn(isbn);
+		event.setType(Event.RENEW);
+		event.setUserId(userId);
+		updateBook(book);
+		saveEvent(event);
+		return true;
+	}
+	
 	private void updatePerson(Person person){
 		String sql = "update person set lent_a=" + person.getLentA() + ",lent_a_date=" + person.getLentADate() 
 				+ ",lent_b=" + person.getLentB() + ",lent_b_date=" + person.getLentBDate()
@@ -439,7 +482,7 @@ public class LibraryDatabase {
 		String sql = "update book set integrity=" + book.getIntegrity() + ",lent="
 				+ (book.getLent()?("1,lent_person=" + book.getLentPerson() + ",lent_date=" + book.getLentDate()):"0")
 				+ ",ordered="
-				+ (book.getOrdered()?("1,ordered_person" + book.getOrderedPerson() + ",ordered_date=" + book.getOrderedDate()):"0")
+				+ (book.getOrdered()?("1,ordered_person=" + book.getOrderedPerson() + ",ordered_date=" + book.getOrderedDate()):"0")
 				+ " where isbn=" + book.getIsbn();
 		try{
 			stmt.executeUpdate(sql);
